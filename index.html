@@ -63,8 +63,25 @@
     <ul id="bookingList"></ul>
   </div>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+
   <script>
-    const bookings = [];
+    const firebaseConfig = {
+      apiKey: "AIzaSyC_ni6VmxU4TSIdzuz5qKdwBmkVpiDHAr0",
+      authDomain: "labequipmentbooking-308d4.firebaseapp.com",
+      databaseURL: "https://labequipmentbooking-308d4-default-rtdb.firebaseio.com",
+      projectId: "labequipmentbooking-308d4",
+      storageBucket: "labequipmentbooking-308d4.appspot.com",
+      messagingSenderId: "973079177593",
+      appId: "1:973079177593:web:fe9c1225fd19fbca78e7a8",
+      measurementId: "G-32YLETLXML"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
     function bookEquipment() {
       const name = document.getElementById('name').value.trim();
@@ -76,34 +93,39 @@
         return;
       }
 
-      const duplicate = bookings.find(
-        (b) => b.equipment === equipment && b.date === date
-      );
+      const bookingRef = db.ref("bookings");
+      const key = equipment + "_" + date;
 
-      if (duplicate) {
-        alert("This equipment is already booked on that date.");
-        return;
-      }
-
-      bookings.push({ name, equipment, date });
-      displayBookings();
-      alert("Booking successful!");
-
-      // Clear fields
-      document.getElementById('name').value = '';
-      document.getElementById('equipment').value = '';
-      document.getElementById('date').value = '';
+      bookingRef.child(key).once("value", (snapshot) => {
+        if (snapshot.exists()) {
+          alert("This equipment is already booked on that date.");
+        } else {
+          bookingRef.child(key).set({ name, equipment, date });
+          alert("Booking successful!");
+          document.getElementById('name').value = '';
+          document.getElementById('equipment').value = '';
+          document.getElementById('date').value = '';
+        }
+      });
     }
 
     function displayBookings() {
-      const list = document.getElementById('bookingList');
-      list.innerHTML = '';
-      bookings.forEach((b) => {
-        const li = document.createElement('li');
-        li.textContent = `${b.equipment} booked by ${b.name} on ${b.date}`;
-        list.appendChild(li);
+      const bookingRef = db.ref("bookings");
+      const list = document.getElementById("bookingList");
+      list.innerHTML = "";
+
+      bookingRef.on("value", (snapshot) => {
+        list.innerHTML = "";
+        snapshot.forEach((child) => {
+          const b = child.val();
+          const li = document.createElement("li");
+          li.textContent = `${b.equipment} booked by ${b.name} on ${b.date}`;
+          list.appendChild(li);
+        });
       });
     }
+
+    window.onload = displayBookings;
   </script>
 </body>
 </html>
